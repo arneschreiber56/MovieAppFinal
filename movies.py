@@ -57,7 +57,8 @@ def start_screen():
         "6. Random movie\n"
         "7. Search movie\n"
         "8. Movies sorted by rating\n"
-        "9. Draw histogram of rankings[/cyan]"
+        "9. Draw histogram of rankings≈\n"
+        "10. Quit[cyan]"
     )
     console.print(Panel(
         menu,
@@ -67,7 +68,7 @@ def start_screen():
         )
     )
     choice = console.input(
-        "[bold bright_cyan]Enter choice (1-9): [/bold bright_cyan]"
+        "[bold bright_cyan]Enter choice (1-10): [/bold bright_cyan]"
     )
     return choice
 
@@ -276,6 +277,16 @@ def movie_db_function_histo(movies):
     return
 
 
+def movie_db_function_quit(movies):
+    """
+    Beendet das Programm.
+    :param movies: Film-DB-Dictionary
+    :return: None
+    """
+    console.print("[bold red]Exiting My Movies Database... Goodbye![/bold red]")
+    exit()
+
+
 def main():
     # Dictionary zum Speichern der Filmtitel und Ratings
     # Hoffentlich lila mit Farb opening Ausdruck '\033[95m  Der Closing Comment ist hier nicht wichtig\033[00m'
@@ -302,6 +313,7 @@ def main():
         "7": movie_db_function_search,
         "8": movie_db_function_sort,
         "9": movie_db_function_histo,
+        "10": movie_db_function_quit,
     }
     while True:
         choice = start_screen()
