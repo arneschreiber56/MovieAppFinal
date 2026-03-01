@@ -39,8 +39,10 @@ from rich.panel import Panel
 
 def start_screen():
     """
-    Gibt den Startscreen mit dem Auswahlmenü aus.
-    :return: Gibt die Auswahl des Users wieder
+    Displays the application start screen and menu options.
+
+    Returns:
+        str: The user's menu selection as a string.
     """
     console.print(Panel(
             "[bold_magenta]My Movies Database[/bold_magenta]",
@@ -75,9 +77,13 @@ def start_screen():
 
 def movie_db_function_list(movies):
     """
-    Gibt die Filme in der Film-DB-Liste aus
-    :param movies: Film-DB-Liste
-    :return: None
+    Displays all movies stored in the database.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        None
     """
     print(f"\n{len(movies)} movies in total")
     for movie in movies:
@@ -88,10 +94,13 @@ def movie_db_function_list(movies):
 
 def movie_db_function_add(movies):
     """
-    Ergänzt einen neuen Film in der Film-DB-Liste. User gibt Filmtitel, Rating
-    und Erscheinungsjahr an.
-    :param movies: Film-DB-Liste
-    :return: aktualisierte Film-DB-Liste
+    Prompts the user to enter a new movie and appends it to the database.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        list[dict]: The updated movie database.
     """
     new_movie_name = input("\nEnter new movie name: ")
     new_movie_rating_float = float(input("Enter new movie rating(0-10): "))
@@ -112,10 +121,13 @@ def movie_db_function_add(movies):
 
 def movie_db_function_del(movies):
     """
-    Löscht einen Film aus dem Film-DB-Dictionary. User muss korrekten Filmtitel
-    angeben.
-    :param movies: Film-DB-Dictionary
-    :return: Aktualisiertes Film-DB-Dictionary
+    Removes a movie from the database by its title.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        list[dict]: The updated movie database.
     """
     movie_to_del = input("\nEnter movie name to delete: ")
     for movie in movies:
@@ -130,11 +142,13 @@ def movie_db_function_del(movies):
 
 def movie_db_function_update(movies):
     """
-    Aktualisiert einen Filmeintrag in der Film-DB-Liste. User muss
-    Filmtitel korrekt angeben und dann auf Nachfrage das aktualisierte Rating
-    eingeben.
-    :param movies: Film-DB-Liste
-    :return: Aktualisierte Film-DB-Liste
+    Updates the rating of an existing movie in the database.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        list[dict]: The updated movie database.
     """
     movie_to_update = input("\nEnter movie name: ")
     for movie in movies:
@@ -154,12 +168,14 @@ def movie_db_function_update(movies):
 
 def movie_db_function_stats(movies):
     """
-    Sortiert die Datenbank primär nach Rating und sekundär alphabetisch.
-    Gibt durchschnittliche und mediane Bewertung wieder, sowie die Filme mit
-    der besten und der schlechtesten Bewertung. Benutzt für Average und Median
-    die statistics library.
-    :param movies: Film-DB-Dictionary
-    :return: None
+    Calculates and displays statistical insights about the movie ratings,
+    including average, median, highest-rated, and lowest-rated movies.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        None
     """
     average_rating = statistics.mean(movie["rating"] for movie in movies)
     median_rating = statistics.median(movie["rating"] for movie in movies)
@@ -181,10 +197,13 @@ def movie_db_function_stats(movies):
 
 def movie_db_function_random(movies):
     """
-    Die Funktion wählt einen zufälligen Film mithilfe der random library aus und
-    gibt diesen samt Rating und Erscheinungsjahr aus.
-    :param movies: Film-DB-Liste
-    :return: None
+    Selects and displays a random movie from the database.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        None
     """
     random_movie = random.choice(movies)
     print(
@@ -197,12 +216,14 @@ def movie_db_function_random(movies):
 
 def movie_db_function_search(movies):
     """
-    Sucht mithilfe der difflib library und Fuzzy Matching einen Film in der
-    Datenbank, auch wenn der Titel nicht ganz korrekt eingegeben wird.
-    Gibt exakten Treffer wieder. Wenn kein exakter Treffer gefunden wurde,
-    wird mittels Fuzzy Matching ähnliche Treffer ausgegeben, sofern gefunden.
-    :param movies: Film-DB-Liste
-    :return: None
+    Searches for a movie by partial title match. If no direct match is found,
+    suggests similar titles using fuzzy matching.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        None
     """
     # zum Fuzzy Matching
     what_to_search = input("\nEnter part of movie name: ").lower()
@@ -248,9 +269,14 @@ def movie_db_function_search(movies):
 
 def movie_db_function_sort(movies):
     """
-    Sortiert Filme absteigend nach primär nach Rating und sekundär alphabetisch
-    :param movies: Film-DB-Liste
-    :return: None
+    Displays all movies sorted by rating in descending order and
+    alphabetically by title as a secondary criterion.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        None
     """
     sorted_to_ratings = sorted(
         movies,
@@ -264,11 +290,13 @@ def movie_db_function_sort(movies):
 
 def movie_db_function_histo(movies):
     """
-    Erstellt mittels matplotlib.pyplot ein Histogramm der Filmratings.
-    User wird nach Filename für Histogramm gefragt und das Histogramm wird unter
-    dem Filename als .png-File im Working Directory gespeichert.
-    :param movies: Film-DB-Liste
-    :return: None
+    Generates and saves a histogram visualization of movie ratings.
+
+    Args:
+        movies (list[dict]): The movie database.
+
+    Returns:
+        None
     """
     # Brauche hier eine Liste von allen Rankings
     all_rankings_list = [movie["rating"] for movie in movies]
@@ -292,9 +320,13 @@ def movie_db_function_histo(movies):
 
 def movie_db_function_quit(_):
     """
-    Beendet das Programm.
-    :param _: Film-DB-Dictionary, wird nicht benutzt
-    :return: None
+    Terminates the application gracefully.
+
+    Args:
+        _ (list[dict]): Unused parameter to maintain consistent function signature.
+
+    Returns:
+        None
     """
     console.print("[bold red]Exiting My Movies Database... Goodbye![/bold red]")
     exit()
