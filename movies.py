@@ -170,8 +170,8 @@ def movie_db_function_update(movies):
 
 def movie_db_function_stats(movies):
     """
-    Calculates and displays statistical insights about the movie ratings,
-    including average, median, highest-rated, and lowest-rated movies.
+    Calculates and displays statistical insights about movie ratings,
+    including average, median, all highest-rated, and all lowest-rated movies.
 
     Args:
         movies (list[dict]): The movie database.
@@ -183,16 +183,27 @@ def movie_db_function_stats(movies):
     median_rating = statistics.median(movie["rating"] for movie in movies)
     print(f"Average rating: {average_rating:.2f}")
     print(f"Median rating: {median_rating}")
+
     sorted_to_ratings = sorted(
         movies,
         key=lambda m: (m["rating"], m["title"]),
         reverse=True
     )
-    best_movie = sorted_to_ratings[0]
-    worst_movie = sorted_to_ratings[-1]
 
-    print(f"Best movie: {best_movie['title']}, {best_movie['rating']}")
-    print(f"Worst movie: {worst_movie['title']}, {worst_movie['rating']}")
+    # Best and worst ratings
+    highest_rating = sorted_to_ratings[0]["rating"]
+    lowest_rating = sorted_to_ratings[-1]["rating"]
+
+    print("Best movies:")
+    for movie in sorted_to_ratings:
+        if movie["rating"] == highest_rating:
+            print(f"  - {movie['title']}, {movie['rating']} ({movie['year']})")
+
+    print("Worst movies:")
+    for movie in sorted_to_ratings:
+        if movie["rating"] == lowest_rating:
+            print(f"  - {movie['title']}, {movie['rating']} ({movie['year']})")
+
     console.input("\n[dim]Press enter to continue[/dim]")
 
 
