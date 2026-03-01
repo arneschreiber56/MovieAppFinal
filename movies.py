@@ -49,7 +49,8 @@ def start_screen():
         )
         )
     menu = (
-        "[cyan]1. List movies\n"
+        "[cyan]0. Exit\n"
+        "1. List movies\n"
         "2. Add movie\n"
         "3. Delete movie\n"
         "4. Update movie\n"
@@ -57,8 +58,7 @@ def start_screen():
         "6. Random movie\n"
         "7. Search movie\n"
         "8. Movies sorted by rating\n"
-        "9. Draw histogram of rankings≈\n"
-        "10. Quit[cyan]"
+        "9. Draw histogram of rankings[/cyan]"
     )
     console.print(Panel(
         menu,
@@ -68,7 +68,7 @@ def start_screen():
         )
     )
     choice = console.input(
-        "[bold bright_cyan]Enter choice (1-10): [/bold bright_cyan]"
+        "[bold bright_cyan]Enter choice (0-9): [/bold bright_cyan]"
     )
     return choice
 
@@ -108,7 +108,8 @@ def movie_db_function_add(movies):
 
 def movie_db_function_del(movies):
     """
-    Löscht einen Film aus dem Film-DB-Dictionary. User muss korrekten Filmtitel angeben
+    Löscht einen Film aus dem Film-DB-Dictionary. User muss korrekten Filmtitel
+    angeben.
     :param movies: Film-DB-Dictionary
     :return: Aktualisiertes Film-DB-Dictionary
     """
@@ -127,7 +128,8 @@ def movie_db_function_del(movies):
 def movie_db_function_update(movies):
     """
     Aktualisiert einen Filmeintrag in dem Film-DB-Dictionary. User muss
-    Filmtitel korrekt angeben und dann auf Nachfrage das aktualisierte Rating eingeben.
+    Filmtitel korrekt angeben und dann auf Nachfrage das aktualisierte Rating
+    eingeben.
     :param movies: Film-DB-Dictionary
     :return: Aktualisiertes Film-DB-Dictionary
     """
@@ -152,8 +154,9 @@ def movie_db_function_update(movies):
 def movie_db_function_stats(movies):
     """
     Sortiert die Datenbank primär nach Rating und sekundär alphabetisch.
-    Gibt durchschnittliche und mediane Bewertung wieder, sowie die Filme mit der besten und
-    der schlechtesten Bewertung. Benutzt für Average und Median die statistics library.
+    Gibt durchschnittliche und mediane Bewertung wieder, sowie die Filme mit
+    der besten und der schlechtesten Bewertung. Benutzt für Average und Median
+    die statistics library.
     :param movies: Film-DB-Dictionary
     :return: None
     """
@@ -219,13 +222,15 @@ def movie_db_function_search(movies):
         return
     # nun zum Fuzzy Matching, falls die Normale suche nicht ergeben hat
     print("\nMovie not found!")
-    # Mit der get_close_matches-Funktion von difflib ähnliche Einträge in movielist finden und als Liste ausgeben
+    # Mit der get_close_matches-Funktion von difflib ähnliche Einträge
+    # in movielist finden und als Liste ausgeben
     close_matches = difflib.get_close_matches(
         what_to_search,
         movie_list,
         # Anzahl der maximalen Ausgabe ähnlicher Filmnamen
         n=3,
-        # Sensitivtät der Suche 0.1 → können total unterschiedlich sein, 1 → Müssen exakt gleich sein
+        # Sensitivtät der Suche 0.1 → können total unterschiedlich sein,
+        # 1 → Müssen exakt gleich sein
         cutoff=0.4
     )
     if close_matches:
@@ -245,8 +250,10 @@ def movie_db_function_sort(movies):
     :param movies: Film-DB-Dictionary
     :return: None
     """
-    sorted_to_ratings = sorted(movies.items(), key=lambda r: (r[1], r[0]), reverse=True)
-    # dict() wandelt das dictionary view object wieder in das dann sortierte dictionary sorted_to_ratings um.
+    sorted_to_ratings = sorted(
+        movies.items(), key=lambda r: (r[1], r[0]), reverse=True)
+    # dict() wandelt das dictionary view object wieder in das dann sortierte
+    # dictionary sorted_to_ratings um.
     for movie in sorted_to_ratings:
         print(f"{movie[0]}: {movie[1]}")
 
@@ -264,23 +271,28 @@ def movie_db_function_histo(movies):
     """
     # Brauche hier eine Liste von allen Rankings
     all_rankings_list = list(movies.values())
-    # Erstellung Histogramm, skaliert automatisch den x-Achsenbereich, erstellt 10 bins mit 1 Schrittweite
+    # Erstellung Histogramm, skaliert automatisch den x-Achsenbereich,
+    # erstellt 10 bins mit 1 Schrittweite
     set_binwidth = list(range(1, 10))
-    plt.hist(all_rankings_list, bins=set_binwidth, edgecolor="black", color="red")
+    plt.hist(all_rankings_list,
+             bins=set_binwidth,
+             edgecolor="black",
+             color="red")
     plt.title("Movie Ranking Histogram")
     plt.xlabel("Ranking distribution")
     plt.ylabel("Frequency")
-    # Dateinamen abfragen und das Histogram als .png in den Projektspeicherplatz speichern
+    # Dateinamen abfragen und das Histogram als .png in den
+    # Projektspeicherplatz speichern
     file_name = input("\nPlease enter the filename for the histogram: ")
     plt.savefig(f"{file_name}.png", dpi=150)
     console.input("\n[dim]Press enter to continue[/dim]")
     return
 
 
-def movie_db_function_quit(movies):
+def movie_db_function_quit(_):
     """
     Beendet das Programm.
-    :param movies: Film-DB-Dictionary
+    :param _: Film-DB-Dictionary, wird nicht benutzt
     :return: None
     """
     console.print("[bold red]Exiting My Movies Database... Goodbye![/bold red]")
@@ -289,7 +301,6 @@ def movie_db_function_quit(movies):
 
 def main():
     # Dictionary zum Speichern der Filmtitel und Ratings
-    # Hoffentlich lila mit Farb opening Ausdruck '\033[95m  Der Closing Comment ist hier nicht wichtig\033[00m'
     movies = {
         "The Shawshank Redemption": 9.5,
         "Pulp Fiction": 8.8,
@@ -313,7 +324,7 @@ def main():
         "7": movie_db_function_search,
         "8": movie_db_function_sort,
         "9": movie_db_function_histo,
-        "10": movie_db_function_quit,
+        "0": movie_db_function_quit,
     }
     while True:
         choice = start_screen()
