@@ -27,6 +27,8 @@ Features
 
 """
 
+import movie_storage
+
 import difflib
 import random
 import statistics
@@ -79,7 +81,7 @@ def start_screen():
     return choice
 
 
-def movie_db_function_list(movies):
+def movie_db_function_list():
     """
     Displays all movies stored in the database.
 
@@ -89,67 +91,59 @@ def movie_db_function_list(movies):
     Returns:
         None
     """
+    movies = movie_storage.get_movies()
     print(f"\n{len(movies)} movies in total")
     for movie in movies:
         print(f"{movie['title']}: {movie['rating']} ({movie['year']})")
     console.input("\n[dim]Press enter to continue[/dim]")
 
 
-def add_movie_logic(title, rating, year, movies):
+def add_movie_logic(title, rating, year):
     """Add a new movie to the list. Returns updated movies list."""
     if 1 <= rating <= 10:
-        movies.append({"title": title, "rating": rating, "year": year})
-    return movies
+        movie_storage.add_movie(title, rating, year)
+        return True
+    return False
 
-
-def movie_db_function_add(movies):
+def movie_db_function_add():
     """CLI wrapper to add a movie with user input."""
     title = console.input("\nEnter new movie name: ")
-    rating = float(console.input("Enter new movie rating(0-10): "))
-    year = int(console.input("Enter release year: "))
-    movies = add_movie_logic(title, rating, year, movies)
+    try:
+        rating = float(console.input("Enter new movie rating(0-10): "))
+        year = int(console.input("Enter release year: "))
+    except ValueError:
+        print("Invalid input in rating or year")
+        console.input("\n[dim]Press enter to continue[/dim]")
+        return
+    success = add_movie_logic(title, rating, year)
+    if success:
+        print(f"Movie {title} successfully added")
+    else:
+        print(f"Rating for movie {title} not consistent ")
     console.input("\n[dim]Press enter to continue[/dim]")
-    return movies
 
 
-def delete_movie_logic(title, movies):
-    """Delete a movie by title. Returns updated movies list and success flag."""
-    for movie in movies:
-        if movie["title"] == title:
-            movies.remove(movie)
-            return movies, True
-    return movies, False
-
-
-def movie_db_function_del(movies):
+def movie_db_function_del():
     """CLI wrapper to delete a movie."""
     title = console.input("\nEnter movie name to delete: ")
-    movies, success = delete_movie_logic(title, movies)
+    success = movie_storage.delete_movie(title)
     if success:
         print(f"Movie {title} successfully deleted")
     else:
         print(f"Movie {title} doesn't exist!")
     console.input("\n[dim]Press enter to continue[/dim]")
-    return movies
 
 
-def update_movie_logic(title, new_rating, movies):
-    """Update the rating of a movie. Returns updated movies list
-    and success flag."""
-    for movie in movies:
-        if movie["title"] == title:
-            if 1 <= new_rating <= 10:
-                movie["rating"] = new_rating
-                return movies, True
-            return movies, False
-    return movies, None  # Movie not found
-
-
-def movie_db_function_update(movies):
+def movie_db_function_update():
     """CLI wrapper to update a movie rating."""
     title = console.input("\nEnter movie name: ")
-    new_rating = float(console.input("Enter new movie rating (1-10): "))
-    movies, success = update_movie_logic(title, new_rating, movies)
+    try:
+        new_rating = float(console.input("Enter new movie rating (1-10): "))
+    except ValueError:
+        print("Invalid rating input!")
+        console.input("\n[dim]Press enter to continue[/dim]")
+        return
+    success = movie_storage.update_movie(title, new_rating)
     if success is True:
         print(f"Movie {title} successfully updated")
     elif success is False:
@@ -157,7 +151,6 @@ def movie_db_function_update(movies):
     else:
         print(f"Movie {title} doesn't exist!")
     console.input("\n[dim]Press enter to continue[/dim]")
-    return movies
 
 
 def sort_movies_logic(movies):
@@ -172,6 +165,9 @@ def sort_movies_logic(movies):
 def stats_logic(movies):
     """Compute average, median, best and worst movies. Gets sorted movie list
     from sort_movies_logic()"""
+    #In case of empty movie database:
+    if not movies:
+        return None, None, [], []
     ratings = [movie["rating"] for movie in movies]
     avg = statistics.mean(ratings)
     med = statistics.median(ratings)
@@ -190,9 +186,15 @@ def stats_logic(movies):
     return avg, med, best_movies, worst_movies
 
 
-def movie_db_function_stats(movies):
+def movie_db_function_stats():
     """CLI wrapper to display stats."""
+    movies = movie_storage.get_movies()
     avg, med, best, worst = stats_logic(movies)
+    # Taking care of empty database return values from stats_logic():
+    if avg is None:
+        print("No movies stored in database!")
+        console.input("\n[dim]Press enter to continue[/dim]")
+        return
     print(f"Average rating: {avg:.2f}")
     print(f"Median rating: {med}")
     for movie in best:
@@ -202,14 +204,17 @@ def movie_db_function_stats(movies):
     console.input("\n[dim]Press enter to continue[/dim]")
 
 
-def get_random_logic(movies):
-    """Select a random movie dictionary from the list of movies
-    and returns it."""
+def get_random_logic():
+    """Select a random movie dictionary from the list of movies in
+    movie_data.json via get_movies() in movie_storage.py and returns it."""
+    movies = movie_storage.get_movies()
+    if not movies:
+        return None
     random_movie = random.choice(movies)
     return random_movie
 
 
-def movie_db_function_random(movies):
+def movie_db_function_random():
     """
     Displays a random movie from the database selected by random_logic().
 
@@ -219,11 +224,14 @@ def movie_db_function_random(movies):
     Returns:
         None
     """
-    random_movie = get_random_logic(movies)
-    print(
-        f"\nYour movie for tonight: {random_movie['title']}, "
-        f"it's rated {random_movie['rating']} ({random_movie['year']})"
-    )
+    random_movie = get_random_logic()
+    if not random_movie:
+        print("No movies available in database!")
+    else:
+        print(
+            f"\nYour movie for tonight: {random_movie['title']}, "
+            f"it's rated {random_movie['rating']} ({random_movie['year']})"
+        )
     console.input("\n[dim]Press enter to continue[/dim]")
 
 
@@ -232,7 +240,7 @@ def search_movie_logic(what_to_search, movies):
     Search for movies by partial title match and fuzzy similarity.
 
     Args:
-        search_term (str): The term to search for.
+        what_to_search (str): The term to search for.
         movies (list[dict]): The movie database.
 
     Returns:
@@ -256,14 +264,14 @@ def search_movie_logic(what_to_search, movies):
         n=3,
         cutoff=0.4
     )
-
     return [], close_matches
 
 
-def movie_db_function_search(movies):
+def movie_db_function_search():
     """
     CLI wrapper for searching movies.
     """
+    movies = movie_storage.get_movies()
     what_to_search = console.input("\nEnter part of movie name: ")
     exact_matches, close_matches = search_movie_logic(what_to_search, movies)
 
@@ -287,7 +295,7 @@ def movie_db_function_search(movies):
     console.input("\n[dim]Press enter to continue[/dim]")
 
 
-def movie_db_function_sort(movies):
+def movie_db_function_sort():
     """
     Displays all movies sorted by rating in descending order and
     alphabetically by title as a secondary criterion. Gets sorted
@@ -299,13 +307,14 @@ def movie_db_function_sort(movies):
     Returns:
         None
     """
+    movies = movie_storage.get_movies()
     sorted_to_ratings = sort_movies_logic(movies)
     for movie in sorted_to_ratings:
         print(f"{movie['title']}: {movie['rating']} ({movie['year']})")
     console.input("\n[dim]Press enter to continue[/dim]")
 
 
-def movie_db_function_histo(movies):
+def movie_db_function_histo():
     """
     Generates and saves a histogram visualization of movie ratings.
 
@@ -315,11 +324,17 @@ def movie_db_function_histo(movies):
     Returns:
         None
     """
+    movies = movie_storage.get_movies()
+    if not movies:
+        print("No movies available to create histogram.")
+        console.input("\n[dim]Press enter to continue[/dim]")
+        return
     # Brauche hier eine Liste von allen Rankings
     all_rankings_list = [movie["rating"] for movie in movies]
     # Erstellung Histogramm, skaliert automatisch den x-Achsenbereich,
     # erstellt 10 bins mit 1 Schrittweite
     set_binwidth = list(range(1, 12))
+    plt.clf() # Clear current figure to avoid graphical overlay of figures
     plt.hist(all_rankings_list,
              bins=set_binwidth,
              edgecolor="black",
@@ -334,7 +349,7 @@ def movie_db_function_histo(movies):
     console.input("\n[dim]Press enter to continue[/dim]")
 
 
-def movie_db_function_quit(_):
+def movie_db_function_quit():
     """
     Terminates the application gracefully.
 
@@ -351,19 +366,6 @@ def movie_db_function_quit(_):
 
 def main():
     # Dictionary zum Speichern der Filmtitel und Ratings
-    movies = [
-        {"title": "The Shawshank Redemption", "rating": 9.5, "year": 1994},
-        {"title": "Pulp Fiction", "rating": 8.8, "year": 1994},
-        {"title": "The Room", "rating": 3.6, "year": 2003},
-        {"title": "The Godfather", "rating": 9.2, "year": 1972},
-        {"title": "The Godfather: Part II", "rating": 9.0, "year": 1974},
-        {"title": "The Dark Knight", "rating": 9.0, "year": 2008},
-        {"title": "12 Angry Men", "rating": 8.9, "year": 1957},
-        {"title": "Everything Everywhere All At Once", "rating": 8.9,
-         "year": 2022},
-        {"title": "Forrest Gump", "rating": 8.8, "year": 1994},
-        {"title": "Star Wars: Episode V", "rating": 8.7, "year": 1980},
-    ]
     functions_dictionary = {
         "1": movie_db_function_list,
         "2": movie_db_function_add,
@@ -380,7 +382,7 @@ def main():
         choice = start_screen()
         try:
             function_choice = functions_dictionary[choice]
-            function_choice(movies)
+            function_choice()
         except KeyError:
             console.print("[red]Not a valid entry! Please choose again.[/red]")
 
