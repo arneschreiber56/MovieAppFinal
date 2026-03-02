@@ -208,3 +208,4 @@ __marimo__/
 
 .git
 test_movies.py
+*.png

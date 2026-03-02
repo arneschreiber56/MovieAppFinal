@@ -65,11 +65,12 @@ def start_screen():
         "8. Movies sorted by rating\n"
         "9. Draw histogram of rankings[/cyan]"
     )
-    console.print(Panel(
-        menu,
-        title="[bold cyan]Menu[bold cyan]",
-        expand=False,
-        border_style="cyan"
+    console.print(
+        Panel(
+            menu,
+            title="[bold cyan]Menu[bold cyan]",
+            expand=False,
+            border_style="cyan"
         )
     )
     choice = console.input(
@@ -183,7 +184,7 @@ def stats_logic(movies):
     for movie in sorted_movies:
         if movie["rating"] == highest_rating:
             best_movies.append(movie)
-        elif movie["rating"] == lowest_rating:
+        if movie["rating"] == lowest_rating:
             worst_movies.append(movie)
 
     return avg, med, best_movies, worst_movies
@@ -318,7 +319,7 @@ def movie_db_function_histo(movies):
     all_rankings_list = [movie["rating"] for movie in movies]
     # Erstellung Histogramm, skaliert automatisch den x-Achsenbereich,
     # erstellt 10 bins mit 1 Schrittweite
-    set_binwidth = list(range(1, 10))
+    set_binwidth = list(range(1, 12))
     plt.hist(all_rankings_list,
              bins=set_binwidth,
              edgecolor="black",
