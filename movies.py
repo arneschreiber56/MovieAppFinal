@@ -102,13 +102,30 @@ def check_rating(rating):
     return False
 
 
+def check_double_titles(title):
+    """Checks if the movie title is a double title.
+
+    Returns:
+        bool: True if double, else False.
+        """
+    movies = movie_storage.get_movies()
+    for movie in movies:
+        if movie.get('title').lower() == title.lower():
+            return True
+    return False
+
+
 def movie_db_function_add():
     """CLI wrapper to add a movie with user input."""
     while True:
         title = console.input("\nEnter new movie name: ").strip()
-        if title:
+        if not title:
+            console.print("[red]Please enter a valid movie name![/red]")
+        elif check_double_titles(title):
+            console.print("[red]Movie already exists![/red]")
+        else:
             break
-        console.print("[red]Please enter a valid movie name![/red]")
+
     while True:
         try:
             rating = float(console.input("Enter new movie rating (1-10): "))
@@ -213,8 +230,8 @@ def movie_db_function_stats():
         console.print("[red]No movies stored in database![/red]")
         console.input("\n[dim]Press enter to continue[/dim]")
         return
-    console.print(f"[green]Average rating: {avg:.2f}[/green]")
-    console.print(f"[green]Median rating: {med}[/green]")
+    console.print(f"[green]Average rating: {avg:.1f}[/green]")
+    console.print(f"[green]Median rating: {med:.1f}[/green]")
     for movie in best:
         console.print(
             f"[green]Best movie: {movie['title']}, {movie['rating']}[/green]"

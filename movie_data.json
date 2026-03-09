@@ -53,5 +53,10 @@
         "title": "Hallo zusammen!",
         "rating": 6.0,
         "year": 2025
+    },
+    {
+        "title": "3",
+        "rating": 1.0,
+        "year": 1993
     }
 ]
