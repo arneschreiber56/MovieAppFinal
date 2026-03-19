@@ -6,12 +6,12 @@ managing a personal movie database as a MasterSchool project.
 
 The application supports full CRUD functionality (Create, Read,
 Update, Delete) as well as analytical and visualization features.
-Each movie is represented as a dictionary containing the following
+Each movie is represented as a sqlite3 database entry containing the following
 attributes:
 
-    - title (str): The movie title
-    - rating (float): The user-defined rating (1–10)
-    - year (int): The release year
+    - title (text(str)): The movie title
+    - rating (real(float)): The user-defined rating (1–10)
+    - year (integer(int)): The release year
 
 Features
 --------
@@ -28,6 +28,8 @@ Features
 """
 
 import movie_storage
+import movie_storage_sql as storage
+import sys
 
 import difflib
 import random
@@ -39,6 +41,27 @@ from rich.panel import Panel
 
 
 console = Console()  # fits nicer in snake_case
+
+
+def print_messages():
+    messages = {
+        "continue": "\n[dim]Press enter to continue[/dim]",
+        "exit": "[bold red]Exiting My Movies Database... Goodbye![/bold red]",
+        "input_name": "\nEnter movie name: ",
+        "input_rating": "Enter new movie rating (1-10): ",
+        "input_year": "Enter release year: ",
+        "no_movies_error": "[red]No movies in the DB available![/red]",
+        "error_no_movie": "[red]Could not find your movie in the DB![/red]",
+        "error_movie_exists": "[red]Movie already exists![/red]",
+        "error_not_valid": "[red]Your entry is not valid![/red]",
+        "error_rating": "[red]Rating must be between 1 and 10![/red]",
+    }
+    return messages
+
+
+
+
+
 
 
 def start_screen():
@@ -88,11 +111,17 @@ def movie_db_function_list():
     Returns:
         None
     """
-    movies = movie_storage.get_movies()
-    print(f"\n{len(movies)} movies in total")
-    for movie in movies:
-        print(f"{movie['title']}: {movie['rating']} ({movie['year']})")
-    console.input("\n[dim]Press enter to continue[/dim]")
+    movies = storage.list_movies()
+    if movies:
+        console.print(f"\n[cornsilk1]{len(movies)} movies in total[/cornsilk1]")
+        for movie, attributes in movies.items():
+            console.print(
+                f"[cornsilk1]{movie}: "
+                f"{attributes['rating']} ({attributes['year']})[cornsilk1]"
+            )
+    else:
+        console.print(print_messages()["no_movies_error"])
+    console.input(print_messages()["continue"])
 
 
 def check_rating(rating):
@@ -108,84 +137,80 @@ def check_double_titles(title):
     Returns:
         bool: True if double, else False.
         """
-    movies = movie_storage.get_movies()
-    for movie in movies:
-        if movie.get('title').lower() == title.lower():
-            return True
+    movies = storage.list_movies()
+    if movies:
+        for movie in movies.keys():
+            if movie.lower() == title.lower():
+                return True
     return False
 
 
 def movie_db_function_add():
     """CLI wrapper to add a movie with user input."""
     while True:
-        title = console.input("\nEnter new movie name: ").strip()
+        title = console.input(print_messages()["input_name"]).strip()
         if not title:
-            console.print("[red]Please enter a valid movie name![/red]")
+            console.print(print_messages()["error_not_valid"])
+            console.input(print_messages()["continue"])
+            return
         elif check_double_titles(title):
-            console.print("[red]Movie already exists![/red]")
+            console.print(print_messages()["error_movie_exists"])
         else:
             break
 
     while True:
         try:
-            rating = float(console.input("Enter new movie rating (1-10): "))
+            rating = float(console.input(print_messages()["input_rating"]))
             if check_rating(rating):
                 break
-            console.print("[red]Rating must be between 1 and 10![/red]")
+            console.print(print_messages()["error_rating"])
         except ValueError:
-            console.print(
-                "[red]Invalid rating input! Please enter a number.[/red]"
-            )
+            console.print(print_messages()["error_not_valid"])
+
     while True:
         try:
-            year = int(console.input("Enter release year: "))
+            year = int(console.input(print_messages()["input_year"]))
             break
         except ValueError:
-            console.print(
-                "[red]Invalid year input! Please enter a number.[/red]"
-            )
-    movie_storage.add_movie(title, rating, year)
-    console.print(f"[green]Movie {title} successfully added![/green]")
-    console.input("\n[dim]Press enter to continue[/dim]")
+            console.print(print_messages()["error_not_valid"])
+
+    storage.add_movie(title, year, rating)
+    console.input(print_messages()["continue"])
 
 
 def movie_db_function_del():
     """CLI wrapper to delete a movie."""
     while True:
-        title = console.input("\nEnter movie name to delete: ")
+        title = console.input(print_messages()["input_name"]).strip()
         if title:
             break
         else:
-            console.print("[red]Please enter a valid movie name![/red]")
-    success = movie_storage.delete_movie(title)
-    if success:
-        print(f"Movie {title} successfully deleted")
-    else:
-        print(f"Movie {title} doesn't exist!")
-    console.input("\n[dim]Press enter to continue[/dim]")
+            console.print(print_messages()["error_not_valid"])
+            console.input(print_messages()["continue"])
+            return
+    storage.delete_movie(title)
+    console.input(print_messages()["continue"])
 
 
 def movie_db_function_update():
     """CLI wrapper to update a movie rating."""
-    while True:
-        title = console.input("\nEnter movie name: ").strip()
-        if title:
-            break
-        console.print("[red]Please enter a valid movie name![/red]")
+
+    title = console.input(print_messages()["input_name"]).strip()
+    if not title:
+        console.print(print_messages()["error_not_valid"])
+        console.input(print_messages()["continue"])
+
     while True:
         try:
-            new_rating = float(console.input("Enter new movie rating (1-10): "))
+            new_rating = float(console.input(print_messages()["input_rating"]))
             if 1 <= new_rating <= 10:
                 break
-            console.print("[red]Rating must be between 1 and 10![/red]")
+            console.print(console.print(print_messages()["error_rating"]))
         except ValueError:
-            console.print("[red]Invalid rating input! Please enter a number.[/red]")
-    success = movie_storage.update_movie(title, new_rating)
-    if success:
-        console.print(f"[green]Movie {title} successfully updated![/green]")
-    else:
-        console.print(f"[red]Movie {title} doesn't exist![/red]")
-    console.input("\n[dim]Press enter to continue[/dim]")
+            console.print(print_messages()["error_not_valid"])
+
+    storage.update_movie(title, new_rating)
+    console.input(print_messages()["continue"])
 
 
 def sort_movies_logic(movies):
@@ -408,8 +433,8 @@ def movie_db_function_quit():
     Returns:
         None
     """
-    console.print("[bold red]Exiting My Movies Database... Goodbye![/bold red]")
-    exit()
+    console.print(print_messages()["exit"])
+    sys.exit()
 
 
 def get_functions_dictionary():
