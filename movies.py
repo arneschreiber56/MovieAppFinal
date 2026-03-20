@@ -27,7 +27,6 @@ Features
 
 """
 
-import movie_storage
 import movie_storage_sql as storage
 import sys
 
@@ -47,11 +46,15 @@ def print_messages():
     messages = {
         "continue": "\n[dim]Press enter to continue[/dim]",
         "exit": "[bold red]Exiting My Movies Database... Goodbye![/bold red]",
+        "similar_movie": "[green]Similar movies found: [/green]",
         "input_name": "\nEnter movie name: ",
         "input_rating": "Enter new movie rating (1-10): ",
         "input_year": "Enter release year: ",
+        "input_histo_name": "\n[green]Please enter the filename for the "
+                            "histogram: [/green]",
         "no_movies_error": "[red]No movies in the DB available![/red]",
         "error_no_movie": "[red]Could not find your movie in the DB![/red]",
+        "error_no_sim_movie": "[red]No similar movies found.[/red]",
         "error_movie_exists": "[red]Movie already exists![/red]",
         "error_not_valid": "[red]Your entry is not valid![/red]",
         "error_rating": "[red]Rating must be between 1 and 10![/red]",
@@ -213,69 +216,94 @@ def movie_db_function_update():
     console.input(print_messages()["continue"])
 
 
-def sort_movies_logic(movies):
+def sort_movies_logic(movies_list):
     """Return movies sorted by rating descending and title ascending."""
     sorted_to_ratings = sorted(
-        movies,
-        key=lambda m: (-m["rating"], m["title"])
+        movies_list,
+        key=lambda m: (-m[2], m[0]) # m[2] = rating, m[0] = title
     )
     return sorted_to_ratings
+
+
+def create_movie_list_of_tuples(movies):
+    """Gets a dictionary (keys = titles) of dictionaries (data: year and rating)
+    and transformed it in a list of tuples with one tuple for each movie:
+    ("title", "year", "rating")
+    """
+    movies_list = []
+    for title, data in movies.items():
+        year = data["year"]
+        rating = data["rating"]
+        movies_list.append((title, year, rating))
+    return movies_list
+
+
+def best_worst_movie_logic(sorted_movies):
+    """creates two lists, one for the movies with the shared highest rating and
+    one for the movies with the shared lowest rating"""
+    highest_rating = sorted_movies[0][2]
+    lowest_rating = sorted_movies[-1][2]
+    best_movies = []
+    worst_movies = []
+    for movie in sorted_movies:
+        if movie[2] == highest_rating:
+            best_movies.append(movie)
+        if movie[2] == lowest_rating:
+            worst_movies.append(movie)
+    return best_movies, worst_movies
 
 
 def stats_logic(movies):
     """Compute average, median, best and worst movies. Gets sorted movie list
     from sort_movies_logic()"""
-    #In case of empty movie database:
+    # In case of movies == None:
     if not movies:
         return None, None, [], []
-    ratings = [movie["rating"] for movie in movies]
+
+    movies_list = create_movie_list_of_tuples(movies)
+
+    ratings = [movie[2] for movie in movies_list]
     avg = statistics.mean(ratings)
     med = statistics.median(ratings)
 
-    sorted_movies = sort_movies_logic(movies)
-    highest_rating = sorted_movies[0]["rating"]
-    lowest_rating = sorted_movies[-1]["rating"]
-    best_movies = []
-    worst_movies = []
-    for movie in sorted_movies:
-        if movie["rating"] == highest_rating:
-            best_movies.append(movie)
-        if movie["rating"] == lowest_rating:
-            worst_movies.append(movie)
+    sorted_movies = sort_movies_logic(movies_list)
+
+    best_movies, worst_movies = best_worst_movie_logic(sorted_movies)
 
     return avg, med, best_movies, worst_movies
 
 
 def movie_db_function_stats():
     """CLI wrapper to display stats."""
-    movies = movie_storage.get_movies()
+    movies = storage.list_movies()
     avg, med, best, worst = stats_logic(movies)
     # Taking care of empty database return values from stats_logic():
     if avg is None:
-        console.print("[red]No movies stored in database![/red]")
-        console.input("\n[dim]Press enter to continue[/dim]")
+        console.print(print_messages()["no_movies_error"])
+        console.input(print_messages()["continue"])
         return
     console.print(f"[green]Average rating: {avg:.1f}[/green]")
     console.print(f"[green]Median rating: {med:.1f}[/green]")
     for movie in best:
         console.print(
-            f"[green]Best movie: {movie['title']}, {movie['rating']}[/green]"
+            f"[green]Best movie: {movie[0]}, {movie[2]}[/green]"
         )
     for movie in worst:
         console.print(
-            f"[green]Worst movie: {movie['title']}, {movie['rating']}[/green]"
+            f"[green]Worst movie: {movie[0]}, {movie[2]}[/green]"
         )
-    console.input("\n[dim]Press enter to continue[/dim]")
+    console.input(print_messages()["continue"])
 
 
 def get_random_logic():
-    """Select a random movie dictionary from the list of movies in
-    movie_data.json via get_movies() in movie_storage.py and returns it."""
-    movies = movie_storage.get_movies()
+    """Select a random movie from the movie DB
+    via list_movies() in movie_storage_sql.py and returns it as well as the
+    movie dictionary."""
+    movies = storage.list_movies()
     if not movies:
         return None
-    random_movie = random.choice(movies)
-    return random_movie
+    random_movie = random.choice(list(movies.keys()))
+    return movies, random_movie
 
 
 def movie_db_function_random():
@@ -285,44 +313,42 @@ def movie_db_function_random():
     Returns:
         None
     """
-    random_movie = get_random_logic()
+    movies, random_movie = get_random_logic()
     if not random_movie:
-        console.print("[red]No movies available in database![/red]")
+        console.print(print_messages()["no_movies_error"])
     else:
         console.print(
-            f"\n[green]Your movie for tonight: {random_movie['title']}, "
-            f"it's rated {random_movie['rating']} "
-            f"({random_movie['year']})[/green]"
+            f"\n[green]Your movie for tonight: {random_movie}, "
+            f"it's rated {movies[random_movie]['rating']} "
+            f"({movies[random_movie]['year']})[/green]"
         )
-    console.input("\n[dim]Press enter to continue[/dim]")
+    console.input(print_messages()["continue"])
 
 
-def search_movie_logic(what_to_search, movies):
+def search_movie_logic(search_for, movies):
     """
     Search for movies by partial title match and fuzzy similarity.
 
     Args:
-        what_to_search (str): The term to search for.
-        movies (list[dict]): The movie database.
+        search_for (str): The term to search for.
+        movies (dict[dict]): Export of the movie database.
 
     Returns:
         tuple:
             - list[dict]: Exact/partial matches
             - list[str]: Similar movie titles (fuzzy matches)
     """
-    what_to_search = what_to_search.lower()
-    # Normal partial match
-    exact_matches = [
-        movie for movie in movies
-        if what_to_search in movie["title"].lower()
-    ]
+    titles = [movie for movie in movies.keys()]
+    exact_matches = []
+    for title in titles:
+        if search_for.lower() in title.lower():
+            exact_matches.append(title)
     if exact_matches:
         return exact_matches, []
     # Fuzzy matching
-    movie_titles = [movie["title"] for movie in movies]
     close_matches = difflib.get_close_matches(
-        what_to_search,
-        movie_titles,
+        search_for,
+        titles,
         n=3,
         cutoff=0.4
     )
@@ -333,38 +359,38 @@ def movie_db_function_search():
     """
     CLI wrapper for searching movies.
     """
-    movies = movie_storage.get_movies()
+    movies = storage.list_movies()
     while True:
-        what_to_search = console.input("\nEnter part of movie name: ")
-        if what_to_search:
+        search_for = console.input(print_messages()["input_name"])
+        if search_for:
             break
         else:
-            console.print("[red]Please enter a valid search term![/red]")
-            continue
-    exact_matches, close_matches = search_movie_logic(what_to_search, movies)
+            console.print(print_messages()["error_not_valid"])
+            console.input(print_messages()["continue"])
+            return
+
+    exact_matches, close_matches = search_movie_logic(search_for, movies)
 
     if exact_matches:
         for movie in exact_matches:
             console.print(
-                f"[green]{movie['title']}, "
-                f"{movie['rating']} "
-                f"({movie['year']})[/green]"
+                f"[green]{movie}, "
+                f"{movies[movie]['rating']} "
+                f"({movies[movie]['year']})[/green]"
             )
     else:
-        console.print("\n[magenta]Movie not found![/magenta]")
+        console.print(print_messages()["error_no_movie"])
         if close_matches:
-            console.print("[green]Similar movies found: [/green]")
+            console.print(print_messages()["similar_movie"])
             for similar_name in close_matches:
-                for movie in movies:
-                    if movie["title"] == similar_name:
-                        console.print(
-                            f"[green]  - {movie['title']}, "
-                            f"{movie['rating']} "
-                            f"({movie['year']})[/green]"
-                        )
+                console.print(
+                    f"[green] - {similar_name}, "
+                    f"{movies[similar_name]['rating']} "
+                    f"({movies[similar_name]['year']})[/green]"
+                )
         else:
-            console.print("[red]No similar movies found.[/red]")
-    console.input("\n[dim]Press enter to continue[/dim]")
+            console.print(print_messages()["error_no_sim_movie"])
+    console.input(print_messages()["continue"])
 
 
 def movie_db_function_sort():
@@ -376,15 +402,16 @@ def movie_db_function_sort():
     Returns:
         None
     """
-    movies = movie_storage.get_movies()
-    sorted_to_ratings = sort_movies_logic(movies)
+    movies = storage.list_movies()
+    movies_list = create_movie_list_of_tuples(movies)
+    sorted_to_ratings = sort_movies_logic(movies_list)
     for movie in sorted_to_ratings:
         console.print(
-            f"[green]{movie['title']}: "
-            f"{movie['rating']} "
-            f"({movie['year']})[/green]"
+            f"[green]{movie[0]}: "
+            f"{movie[2]} "
+            f"({movie[1]})[/green]"
         )
-    console.input("\n[dim]Press enter to continue[/dim]")
+    console.input(print_messages()["continue"])
 
 
 def movie_db_function_histo():
@@ -394,13 +421,13 @@ def movie_db_function_histo():
     Returns:
         None
     """
-    movies = movie_storage.get_movies()
+    movies = storage.list_movies()
     if not movies:
-        console.print("[red]No movies available to create histogram.[/red]")
-        console.input("\n[dim]Press enter to continue[/dim]")
+        console.print(print_messages()["no_movies_error"])
+        console.input(print_messages()["continue"])
         return
     # Brauche hier eine Liste von allen Rankings
-    all_rankings_list = [movie["rating"] for movie in movies]
+    all_rankings_list = [data["rating"] for data in movies.values()]
     # Erstellung Histogramm, skaliert automatisch den x-Achsenbereich,
     # erstellt 10 bins mit 1 Schrittweite
     set_binwidth = list(range(1, 12))
@@ -415,15 +442,13 @@ def movie_db_function_histo():
     # Dateinamen abfragen und das Histogram als .png in den
     # Projektspeicherplatz speichern
     while True:
-        file_name = console.input(
-            "\n[green]Please enter the filename for the histogram: [/green]"
-        )
+        file_name = console.input(print_messages()["input_histo_name"])
         if file_name:
             break
         else:
-            console.print("[red]Please enter a valid filename![/red]")
+            console.print(print_messages()["error_not_valid"])
     plt.savefig(f"{file_name}.png", dpi=150)
-    console.input("\n[dim]Press enter to continue[/dim]")
+    console.input(print_messages()["continue"])
 
 
 def movie_db_function_quit():
@@ -460,7 +485,7 @@ def main():
     while True:
         choice = start_screen()
         if choice not in functions_dictionary:
-            console.print("[red]Invalid choice![/red]")
+            console.print(print_messages()["error_not_valid"])
             continue
         functions_dictionary[choice]()
 
