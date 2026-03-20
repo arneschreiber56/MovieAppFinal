@@ -128,7 +128,7 @@ def movie_db_function_list():
 
 
 def check_rating(rating):
-    """Checks if rating is valid."""
+    """Checks if the rating is valid."""
     if 1 <= rating <= 10:
         return True
     return False
@@ -208,7 +208,7 @@ def movie_db_function_update():
             new_rating = float(console.input(print_messages()["input_rating"]))
             if 1 <= new_rating <= 10:
                 break
-            console.print(console.print(print_messages()["error_rating"]))
+            console.print(print_messages()["error_rating"])
         except ValueError:
             console.print(print_messages()["error_not_valid"])
 
@@ -230,12 +230,10 @@ def create_movie_list_of_tuples(movies):
     and transformed it in a list of tuples with one tuple for each movie:
     ("title", "year", "rating")
     """
-    movies_list = []
-    for title, data in movies.items():
-        year = data["year"]
-        rating = data["rating"]
-        movies_list.append((title, year, rating))
-    return movies_list
+    return [
+        (title, data["year"], data["rating"])
+        for title, data in movies.items()
+    ]
 
 
 def best_worst_movie_logic(sorted_movies):
@@ -243,20 +241,17 @@ def best_worst_movie_logic(sorted_movies):
     one for the movies with the shared lowest rating"""
     highest_rating = sorted_movies[0][2]
     lowest_rating = sorted_movies[-1][2]
-    best_movies = []
-    worst_movies = []
-    for movie in sorted_movies:
-        if movie[2] == highest_rating:
-            best_movies.append(movie)
-        if movie[2] == lowest_rating:
-            worst_movies.append(movie)
+
+    best_movies = [m for m in sorted_movies if m[2] == highest_rating]
+    worst_movies = [m for m in sorted_movies if m[2] == lowest_rating]
+
     return best_movies, worst_movies
 
 
 def stats_logic(movies):
-    """Compute average, median, best and worst movies. Gets sorted movie list
-    from sort_movies_logic()"""
-    # In case of movies == None:
+    """Compute average, median, the best and worst movies. Gets the sorted movie
+    list from sort_movies_logic()"""
+    # In the case of movies == None:
     if not movies:
         return None, None, [], []
 
@@ -396,7 +391,7 @@ def movie_db_function_search():
 def movie_db_function_sort():
     """
     Displays all movies sorted by rating in descending order and
-    alphabetically by title as a secondary criterion. Gets sorted
+    alphabetically by title as a secondary criterion. Gets the sorted
     movie list from sort_movies_logic().
 
     Returns:
