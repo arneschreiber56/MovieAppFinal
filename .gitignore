@@ -213,3 +213,7 @@ sanity_check.py
 api_test.py
 movies_first_try.db
 .env
+movie_storage.py
+.idea/%
+old/
+.idea/
