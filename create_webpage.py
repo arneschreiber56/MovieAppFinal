@@ -29,7 +29,7 @@ def prepare_title_html(raw_html, app_title):
         title_html = raw_html.replace(TITLE_PLACEHOLDER, app_title)
         return title_html, None
     else:
-        return None, "error_title_placeholder"
+        return None, "error_html_preparation"
 
 
 def prepare_movie_grid_html(title_html, html_movie_snippet):
@@ -41,14 +41,13 @@ def prepare_movie_grid_html(title_html, html_movie_snippet):
         )
         return processed_html, None
     else:
-        return None, "error_grid_placeholder"
+        return None, "error_html_preparation"
 
 
 def beautify_html(processed_html):
     """beautifies the HTML string for writing into index.html"""
     soup = BeautifulSoup(processed_html, "html.parser")
-    pretty_html = soup.prettify(formatter='html')
-    beautiful_html = pretty_html.replace("  ", "    ")
+    beautiful_html = soup.prettify(formatter='html')
     return beautiful_html
 
 
@@ -58,7 +57,7 @@ def write_index_html(beautiful_html):
     try:
         with open(PATH_INDEX, "w", encoding="utf-8") as txtobj:
             txtobj.write(beautiful_html)
-    except OSError as e:
-        return e
+    except OSError:
+        return True
     else:
-        return None
+        return False

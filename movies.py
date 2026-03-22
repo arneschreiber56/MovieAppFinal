@@ -26,6 +26,7 @@ Features
 - Generate and save a histogram of ratings
 
 """
+import create_webpage
 import movie_storage_sql as storage
 import os
 import requests
@@ -35,10 +36,11 @@ import difflib
 from dotenv import load_dotenv
 import random
 import statistics
-
 import matplotlib.pyplot as plt
 from rich.console import Console
 from rich.panel import Panel
+
+from create_webpage import beautify_html, write_index_html
 
 load_dotenv()
 
@@ -47,28 +49,58 @@ console = Console()  # fits nicer in snake_case
 
 URL = os.getenv("URL")
 API_KEY = os.getenv("API_KEY")
+APP_TITLE = os.getenv("APP_TITLE")
 
 
 def print_messages():
+    """Returns a dictionary of console.print and console.input messages"""
     messages = {
-        "continue": "\n[dim]Press enter to continue[/dim]",
-        "exit": "[bold red]Exiting My Movies Database... Goodbye![/bold red]",
-        "similar_movie": "[green]Similar movies found: [/green]",
+        # --------------------
+        # INPUTS
+        # --------------------
+        "input_choice": (
+            "[bold bright_cyan]Enter choice (0-10): [/bold bright_cyan]"
+        ),
         "input_name": "\nEnter movie name: ",
         "input_rating": "Enter new movie rating (1-10): ",
         "input_year": "Enter release year: ",
-        "input_histo_name": "\n[green]Please enter the filename for the "
-                            "histogram: [/green]",
-        "error_db": "[red]Could not process Database correctly![/red]",
+        "input_histo_name": (
+            "\n[green]Please enter the filename for the histogram: [/green]"
+        ),
+        # --------------------
+        # SUCCESS / INFO
+        # --------------------
+        "continue": "\n[dim]Press enter to continue[/dim]",
+        "exit": "[bold red]Exiting My Movies Database... Goodbye![/bold red]",
+        "similar_movie": "[green]Similar movies found: [/green]",
+        "index_html": "[green]Webpage successfully generated[/green]",
+        "movie_added": "[green]Movie successfully added![/green]",
+        "movie_deleted": "[green]Movie successfully deleted![/green]",
+        "movie_updated": "[green]Movie successfully updated![/green]",
+        # --------------------
+        # ERRORS (MOVIES)
+        # --------------------
         "no_movies_error": "[red]No movies in the DB available![/red]",
         "error_no_movie": "[red]Could not find your movie in the DB![/red]",
-        "error_no_sim_movie": "[red]No similar movies found.[/red]",
         "error_movie_exists": "[red]Movie already exists![/red]",
+        "error_no_sim_movie": "[red]No similar movies found.[/red]",
+        # --------------------
+        # ERRORS (INPUT VALIDATION)
+        # --------------------
         "error_not_valid": "[red]Your entry is not valid![/red]",
         "error_rating": "[red]Rating must be between 1 and 10![/red]",
-        "error_get_response": "[red]Unexpected response from API-request[/red]",
         "error_valid_year": "[red] No valid year available![/red]",
-        "error_valid_rating": "[red] No valid rating available![/red]"
+        "error_valid_rating": "[red] No valid rating available![/red]",
+        # --------------------
+        # ERRORS (TECHNICAL)
+        # --------------------
+        "error_add_db": "[red]Could not add movie to DB![/red]",
+        "error_del_db": "[red]Could not delete movie from DB![/red]",
+        "error_update_db": "[red]Could not update movie in DB![/red]",
+        "error_db": "[red]Could not interact with Database correctly![/red]",
+        "error_get_response": "[red]Unexpected response from API-request[/red]",
+        "error_html_preparation": "[red]Could not create HTML![/red]",
+        "error_index_html": "[red]Could not generate web page![/red]",
     }
     return messages
 
@@ -88,16 +120,17 @@ def start_screen():
         )
     )
     menu = (
-        "[cyan]0. Exit\n"
-        "1. List movies\n"
-        "2. Add movie\n"
-        "3. Delete movie\n"
-        "4. Update movie\n"
-        "5. Stats\n"
-        "6. Random movie\n"
-        "7. Search movie\n"
-        "8. Movies sorted by rating\n"
-        "9. Draw histogram of rankings[/cyan]"
+        "[cyan]0.  Exit\n"
+        "1.  List movies\n"
+        "2.  Add movie\n"
+        "3.  Delete movie\n"
+        "4.  Update movie\n"
+        "5.  Stats\n"
+        "6.  Random movie\n"
+        "7.  Search movie\n"
+        "8.  Movies sorted by rating\n"
+        "9.  Draw histogram of rankings\n"
+        "10. Generate web page[/cyan]"
     )
     console.print(
         Panel(
@@ -107,21 +140,18 @@ def start_screen():
             border_style="cyan"
         )
     )
-    choice = console.input(
-        "[bold bright_cyan]Enter choice (0-9): [/bold bright_cyan]"
-    )
+    choice = console.input(print_messages()["input_choice"])
     return choice
 
 
 def movie_db_function_list():
     """
     Displays all movies stored in the database.
-
     Returns:
         None
     """
     movies = storage.list_movies()
-    if movies:
+    if isinstance(movies, dict):
         console.print(f"\n[cornsilk1]{len(movies)} movies in total[/cornsilk1]")
         for movie, attributes in movies.items():
             console.print(
@@ -129,7 +159,7 @@ def movie_db_function_list():
                 f"{attributes['rating']} ({attributes['year']})[cornsilk1]"
             )
     else:
-        console.print(print_messages()["no_movies_error"])
+        console.print(print_messages()[movies])
     console.input(print_messages()["continue"])
 
 
@@ -142,7 +172,6 @@ def check_rating(rating):
 
 def check_double_titles(title):
     """Checks if the movie title is a double title.
-
     Returns:
         bool: True if double, else False.
         """
@@ -217,8 +246,10 @@ def movie_db_function_add():
         return
     poster_url = movie_info.get("Poster")
 
-    storage.add_movie(title, year, rating, poster_url)
+    success = storage.add_movie(title, year, rating, poster_url)
+    console.print(print_messages()[success])
     console.input(print_messages()["continue"])
+    return
 
 
 def movie_db_function_del():
@@ -231,8 +262,10 @@ def movie_db_function_del():
             console.print(print_messages()["error_not_valid"])
             console.input(print_messages()["continue"])
             return
-    storage.delete_movie(title)
+    success = storage.delete_movie(title)
+    console.print(print_messages()[success])
     console.input(print_messages()["continue"])
+    return
 
 
 def movie_db_function_update():
@@ -254,6 +287,7 @@ def movie_db_function_update():
 
     storage.update_movie(title, new_rating)
     console.input(print_messages()["continue"])
+    return
 
 
 def sort_movies_logic(movies_list):
@@ -520,10 +554,40 @@ def generate_movie_grid_html():
         return "<li><h3>No Movies in Database available<h3></li>"
 
 
-def generate_webpage():
+def movie_db_function_generate_webpage():
     """generates webpage by structuring the procedure of the index.html creation
     """
-    pass
+    # 1. Load HTML-Template:
+    raw_html, error = create_webpage.load_index_html_template()
+    if error:
+        console.print("[red]" + error + "[/red]")
+        console.input(print_messages()["continue"])
+        return None
+    # 2. Generate HTML with DB entries:
+    html_grid_snippet = generate_movie_grid_html()
+    # 3. Generate processed HTML:
+    title_html, error = create_webpage.prepare_title_html(raw_html, APP_TITLE)
+    if error:
+        console.print(print_messages()[error])
+        console.input(print_messages()["continue"])
+        return None
+    processed_html, error = create_webpage.prepare_movie_grid_html(
+        title_html, html_grid_snippet
+    )
+    if error:
+        console.print(print_messages()[error])
+        console.input(print_messages()["continue"])
+        return None
+    # 4. Beautification of the HTML code:
+    beautiful_html = create_webpage.beautify_html(processed_html)
+    # 5. Creation of the index.html file and print response:
+    error = create_webpage.write_index_html(beautiful_html)
+    if error:
+        console.print(print_messages()["error_index_html"])
+    else:
+        console.print(print_messages()["index_html"])
+    console.input(print_messages()["continue"])
+    return None
 
 
 def movie_db_function_quit():
@@ -550,6 +614,7 @@ def get_functions_dictionary():
         "7": movie_db_function_search,
         "8": movie_db_function_sort,
         "9": movie_db_function_histo,
+        "10": movie_db_function_generate_webpage,
         "0": movie_db_function_quit,
     }
     return functions_dictionary

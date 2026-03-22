@@ -28,9 +28,8 @@ def list_movies():
                 "SELECT title, year, rating, poster FROM movies")
             )
             movies = result.fetchall()
-    except exc.SQLAlchemyError as e:
-        print(f"Error: {e}")
-        return None
+    except exc.SQLAlchemyError:
+        return "error_db"
     else:
         if len(movies) > 0:
             return {
@@ -39,7 +38,7 @@ def list_movies():
                          "poster": row[3]}
                 for row in movies}
         else:
-            return None
+            return "no_movies_error"
 
 
 def add_movie(title, year, rating, poster):
@@ -54,9 +53,9 @@ def add_movie(title, year, rating, poster):
                                 "year": year,
                                 "rating": rating,
                                 "poster": poster})
-            print(f"Movie '{title}' added successfully.")
-        except exc.SQLAlchemyError as e:
-            print(f"Error: {e}")
+            return "movie_added"
+        except exc.SQLAlchemyError:
+            return "error_add_db"
 
 
 def delete_movie(title):
@@ -70,11 +69,11 @@ def delete_movie(title):
                 ), {"title": title}
             )
             if result.rowcount == 0:
-                print("Movie not found!")
+                return "error_no_movie"
             else:
-                print(f"Movie '{title}' successfully deleted")
-        except exc.SQLAlchemyError as e:
-            print(f"Error: {e}")
+                return "movie_deleted"
+        except exc.SQLAlchemyError:
+            return "error_del_db"
 
 
 def update_movie(title, rating):
@@ -90,8 +89,8 @@ def update_movie(title, rating):
                     "title": title}
             )
             if result.rowcount == 0:
-                print("Movie not found!")
+                return "error_no_movie"
             else:
-                print(f"Movie '{title}' successfully updated")
+                return "movie_updated"
         except exc.SQLAlchemyError as e:
-            print(f"Error: {e}")
+            return "error_update_db"
