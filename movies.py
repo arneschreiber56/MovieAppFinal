@@ -26,12 +26,12 @@ Features
 - Generate and save a histogram of ratings
 
 """
-import create_webpage
-import dictionaries as d
-import movie_storage_sql as storage
+from data import dictionaries as d
+from data import movie_storage_sql as storage
 import os
 import requests
 import sys
+from web import create_webpage
 
 import difflib
 from dotenv import load_dotenv
@@ -40,8 +40,6 @@ import statistics
 import matplotlib.pyplot as plt
 from rich.console import Console
 from rich.panel import Panel
-
-from create_webpage import beautify_html, write_index_html
 
 load_dotenv()
 
@@ -476,15 +474,7 @@ def generate_movie_grid_html():
         console.print(PRINT_MESSAGES["error_db"])
         console.input(PRINT_MESSAGES["continue"])
         return
-    movie_grid_template = '''
-    <li>
-    <div class="movie">
-    <img class="movie-poster" src="__poster-url__" title= "Movie poster" alt="No movie poster available">
-    <div class="movie-title">__movie-title__</div>
-    <div class="movie-year">__movie-year__</div>
-    </div>
-    </li>
-    '''
+    movie_grid_template = create_webpage.get_movie_grid_template()
     html_grid_snippet = ""
     if len(movie_dict) > 0:
         for title, data in movie_dict.items():

@@ -21,6 +21,20 @@ def load_index_html_template():
         return html_template, None
 
 
+def get_movie_grid_template():
+    """Returns the template HTML for the Movie grid structure"""
+    movie_grid_template = '''
+        <li>
+        <div class="movie">
+        <img class="movie-poster" src="__poster-url__" title= "Movie poster" alt="No movie poster available">
+        <div class="movie-title">__movie-title__</div>
+        <div class="movie-year">__movie-year__</div>
+        </div>
+        </li>
+        '''
+    return movie_grid_template
+
+
 def prepare_title_html(raw_html, app_title):
     """adds a title to the index_html webpage, returns adapted HTML if
     successful, None if not"""
