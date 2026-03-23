@@ -27,6 +27,7 @@ Features
 
 """
 import create_webpage
+import dictionaries as d
 import movie_storage_sql as storage
 import os
 import requests
@@ -47,62 +48,10 @@ load_dotenv()
 console = Console()  # fits nicer in snake_case
 
 
-URL = os.getenv("URL")
 API_KEY = os.getenv("API_KEY")
 APP_TITLE = os.getenv("APP_TITLE")
-
-
-def print_messages():
-    """Returns a dictionary of console.print and console.input messages"""
-    messages = {
-        # --------------------
-        # INPUTS
-        # --------------------
-        "input_choice": (
-            "[bold bright_cyan]Enter choice (0-10): [/bold bright_cyan]"
-        ),
-        "input_name": "\nEnter movie name: ",
-        "input_rating": "Enter new movie rating (1-10): ",
-        "input_year": "Enter release year: ",
-        "input_histo_name": (
-            "\n[green]Please enter the filename for the histogram: [/green]"
-        ),
-        # --------------------
-        # SUCCESS / INFO
-        # --------------------
-        "continue": "\n[dim]Press enter to continue[/dim]",
-        "exit": "[bold red]Exiting My Movies Database... Goodbye![/bold red]",
-        "similar_movie": "[green]Similar movies found: [/green]",
-        "index_html": "[green]Webpage successfully generated[/green]",
-        "movie_added": "[green]Movie successfully added![/green]",
-        "movie_deleted": "[green]Movie successfully deleted![/green]",
-        "movie_updated": "[green]Movie successfully updated![/green]",
-        # --------------------
-        # ERRORS (MOVIES)
-        # --------------------
-        "no_movies_error": "[red]No movies in the DB available![/red]",
-        "error_no_movie": "[red]Could not find your movie in the DB![/red]",
-        "error_movie_exists": "[red]Movie already exists![/red]",
-        "error_no_sim_movie": "[red]No similar movies found.[/red]",
-        # --------------------
-        # ERRORS (INPUT VALIDATION)
-        # --------------------
-        "error_not_valid": "[red]Your entry is not valid![/red]",
-        "error_rating": "[red]Rating must be between 1 and 10![/red]",
-        "error_valid_year": "[red] No valid year available![/red]",
-        "error_valid_rating": "[red] No valid rating available![/red]",
-        # --------------------
-        # ERRORS (TECHNICAL)
-        # --------------------
-        "error_add_db": "[red]Could not add movie to DB![/red]",
-        "error_del_db": "[red]Could not delete movie from DB![/red]",
-        "error_update_db": "[red]Could not update movie in DB![/red]",
-        "error_db": "[red]Could not interact with Database correctly![/red]",
-        "error_get_response": "[red]Unexpected response from API-request[/red]",
-        "error_html_preparation": "[red]Could not create HTML![/red]",
-        "error_index_html": "[red]Could not generate web page![/red]",
-    }
-    return messages
+PRINT_MESSAGES = d.print_messages()
+URL = os.getenv("URL")
 
 
 def start_screen():
@@ -140,7 +89,7 @@ def start_screen():
             border_style="cyan"
         )
     )
-    choice = console.input(print_messages()["input_choice"])
+    choice = console.input(PRINT_MESSAGES["input_choice"])
     return choice
 
 
@@ -159,8 +108,8 @@ def movie_db_function_list():
                 f"{attributes['rating']} ({attributes['year']})[cornsilk1]"
             )
     else:
-        console.print(print_messages()[movies])
-    console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES[movies])
+    console.input(PRINT_MESSAGES["continue"])
 
 
 def check_rating(rating):
@@ -203,13 +152,13 @@ def get_api_response(search_title):
 def movie_db_function_add():
     """CLI wrapper to add a movie with user input."""
     while True:
-        search_title = console.input(print_messages()["input_name"]).strip()
+        search_title = console.input(PRINT_MESSAGES["input_name"]).strip()
         if not search_title:
-            console.print(print_messages()["error_not_valid"])
-            console.input(print_messages()["continue"])
+            console.print(PRINT_MESSAGES["error_not_valid"])
+            console.input(PRINT_MESSAGES["continue"])
             return
         elif check_double_titles(search_title):
-            console.print(print_messages()["error_movie_exists"])
+            console.print(PRINT_MESSAGES["error_movie_exists"])
         else:
             break
 
@@ -217,23 +166,23 @@ def movie_db_function_add():
 
     if error_message:
         console.print(f"[red]{error_message}[/red]")
-        console.input(print_messages()["continue"])
+        console.input(PRINT_MESSAGES["continue"])
         return
     if not movie_info or movie_info.get("Title") == "N/A":
-        console.print(print_messages()["error_get_response"])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES["error_get_response"])
+        console.input(PRINT_MESSAGES["continue"])
         return
     if movie_info.get("Response") == "False":
         console.print(f"[red]{movie_info.get('Error')}[/red]")
-        console.input(print_messages()["continue"])
+        console.input(PRINT_MESSAGES["continue"])
         return
 
     title = movie_info.get("Title")
     if movie_info.get("Year").isdigit():
         year = int(movie_info.get("Year"))
     else:
-        console.print(print_messages()["error_valid_year"])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES["error_valid_year"])
+        console.input(PRINT_MESSAGES["continue"])
         return
     rating = None
     for r in movie_info.get("Ratings", []): #Returns empty list if no "Ratings"
@@ -241,52 +190,52 @@ def movie_db_function_add():
             rating = float(r["Value"].split("/")[0])
             break
     if not rating:
-        console.print(print_messages()["error_valid_rating"])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES["error_valid_rating"])
+        console.input(PRINT_MESSAGES["continue"])
         return
     poster_url = movie_info.get("Poster")
 
     success = storage.add_movie(title, year, rating, poster_url)
-    console.print(print_messages()[success])
-    console.input(print_messages()["continue"])
+    console.print(PRINT_MESSAGES[success])
+    console.input(PRINT_MESSAGES["continue"])
     return
 
 
 def movie_db_function_del():
     """CLI wrapper to delete a movie."""
     while True:
-        title = console.input(print_messages()["input_name"]).strip()
+        title = console.input(PRINT_MESSAGES["input_name"]).strip()
         if title:
             break
         else:
-            console.print(print_messages()["error_not_valid"])
-            console.input(print_messages()["continue"])
+            console.print(PRINT_MESSAGES["error_not_valid"])
+            console.input(PRINT_MESSAGES["continue"])
             return
     success = storage.delete_movie(title)
-    console.print(print_messages()[success])
-    console.input(print_messages()["continue"])
+    console.print(PRINT_MESSAGES[success])
+    console.input(PRINT_MESSAGES["continue"])
     return
 
 
 def movie_db_function_update():
     """CLI wrapper to update a movie rating."""
 
-    title = console.input(print_messages()["input_name"]).strip()
+    title = console.input(PRINT_MESSAGES["input_name"]).strip()
     if not title:
-        console.print(print_messages()["error_not_valid"])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES["error_not_valid"])
+        console.input(PRINT_MESSAGES["continue"])
 
     while True:
         try:
-            new_rating = float(console.input(print_messages()["input_rating"]))
+            new_rating = float(console.input(PRINT_MESSAGES["input_rating"]))
             if 1 <= new_rating <= 10:
                 break
-            console.print(print_messages()["error_rating"])
+            console.print(PRINT_MESSAGES["error_rating"])
         except ValueError:
-            console.print(print_messages()["error_not_valid"])
+            console.print(PRINT_MESSAGES["error_not_valid"])
 
     storage.update_movie(title, new_rating)
-    console.input(print_messages()["continue"])
+    console.input(PRINT_MESSAGES["continue"])
     return
 
 
@@ -348,8 +297,8 @@ def movie_db_function_stats():
     avg, med, best, worst = stats_logic(movies)
     # Taking care of empty database return values from stats_logic():
     if avg is None:
-        console.print(print_messages()["no_movies_error"])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES["no_movies_error"])
+        console.input(PRINT_MESSAGES["continue"])
         return
     console.print(f"[green]Average rating: {avg:.1f}[/green]")
     console.print(f"[green]Median rating: {med:.1f}[/green]")
@@ -361,7 +310,7 @@ def movie_db_function_stats():
         console.print(
             f"[green]Worst movie: {movie[0]}, {movie[2]}[/green]"
         )
-    console.input(print_messages()["continue"])
+    console.input(PRINT_MESSAGES["continue"])
 
 
 def get_random_logic():
@@ -384,14 +333,14 @@ def movie_db_function_random():
     """
     movies, random_movie = get_random_logic()
     if not random_movie:
-        console.print(print_messages()["no_movies_error"])
+        console.print(PRINT_MESSAGES["no_movies_error"])
     else:
         console.print(
             f"\n[green]Your movie for tonight: {random_movie}, "
             f"it's rated {movies[random_movie]['rating']} "
             f"({movies[random_movie]['year']})[/green]"
         )
-    console.input(print_messages()["continue"])
+    console.input(PRINT_MESSAGES["continue"])
 
 
 def search_movie_logic(search_for, movies):
@@ -430,12 +379,12 @@ def movie_db_function_search():
     """
     movies = storage.list_movies()
     while True:
-        search_for = console.input(print_messages()["input_name"])
+        search_for = console.input(PRINT_MESSAGES["input_name"])
         if search_for:
             break
         else:
-            console.print(print_messages()["error_not_valid"])
-            console.input(print_messages()["continue"])
+            console.print(PRINT_MESSAGES["error_not_valid"])
+            console.input(PRINT_MESSAGES["continue"])
             return
 
     exact_matches, close_matches = search_movie_logic(search_for, movies)
@@ -448,9 +397,9 @@ def movie_db_function_search():
                 f"({movies[movie]['year']})[/green]"
             )
     else:
-        console.print(print_messages()["error_no_movie"])
+        console.print(PRINT_MESSAGES["error_no_movie"])
         if close_matches:
-            console.print(print_messages()["similar_movie"])
+            console.print(PRINT_MESSAGES["similar_movie"])
             for similar_name in close_matches:
                 console.print(
                     f"[green] - {similar_name}, "
@@ -458,8 +407,8 @@ def movie_db_function_search():
                     f"({movies[similar_name]['year']})[/green]"
                 )
         else:
-            console.print(print_messages()["error_no_sim_movie"])
-    console.input(print_messages()["continue"])
+            console.print(PRINT_MESSAGES["error_no_sim_movie"])
+    console.input(PRINT_MESSAGES["continue"])
 
 
 def movie_db_function_sort():
@@ -480,7 +429,7 @@ def movie_db_function_sort():
             f"{movie[2]} "
             f"({movie[1]})[/green]"
         )
-    console.input(print_messages()["continue"])
+    console.input(PRINT_MESSAGES["continue"])
 
 
 def movie_db_function_histo():
@@ -492,8 +441,8 @@ def movie_db_function_histo():
     """
     movies = storage.list_movies()
     if not movies:
-        console.print(print_messages()["no_movies_error"])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES["no_movies_error"])
+        console.input(PRINT_MESSAGES["continue"])
         return
     # Brauche hier eine Liste von allen Rankings
     all_rankings_list = [data["rating"] for data in movies.values()]
@@ -511,21 +460,21 @@ def movie_db_function_histo():
     # Dateinamen abfragen und das Histogram als .png in den
     # Projektspeicherplatz speichern
     while True:
-        file_name = console.input(print_messages()["input_histo_name"])
+        file_name = console.input(PRINT_MESSAGES["input_histo_name"])
         if file_name:
             break
         else:
-            console.print(print_messages()["error_not_valid"])
+            console.print(PRINT_MESSAGES["error_not_valid"])
     plt.savefig(f"{file_name}.png", dpi=150)
-    console.input(print_messages()["continue"])
+    console.input(PRINT_MESSAGES["continue"])
 
 
 def generate_movie_grid_html():
     """creates the movie grid HTML snippet"""
     movie_dict = storage.list_movies()
     if not movie_dict:
-        console.print(print_messages()["error_db"])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES["error_db"])
+        console.input(PRINT_MESSAGES["continue"])
         return
     movie_grid_template = '''
     <li>
@@ -561,32 +510,32 @@ def movie_db_function_generate_webpage():
     raw_html, error = create_webpage.load_index_html_template()
     if error:
         console.print("[red]" + error + "[/red]")
-        console.input(print_messages()["continue"])
+        console.input(PRINT_MESSAGES["continue"])
         return None
     # 2. Generate HTML with DB entries:
     html_grid_snippet = generate_movie_grid_html()
     # 3. Generate processed HTML:
     title_html, error = create_webpage.prepare_title_html(raw_html, APP_TITLE)
     if error:
-        console.print(print_messages()[error])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES[error])
+        console.input(PRINT_MESSAGES["continue"])
         return None
     processed_html, error = create_webpage.prepare_movie_grid_html(
         title_html, html_grid_snippet
     )
     if error:
-        console.print(print_messages()[error])
-        console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES[error])
+        console.input(PRINT_MESSAGES["continue"])
         return None
     # 4. Beautification of the HTML code:
     beautiful_html = create_webpage.beautify_html(processed_html)
     # 5. Creation of the index.html file and print response:
     error = create_webpage.write_index_html(beautiful_html)
     if error:
-        console.print(print_messages()["error_index_html"])
+        console.print(PRINT_MESSAGES["error_index_html"])
     else:
-        console.print(print_messages()["index_html"])
-    console.input(print_messages()["continue"])
+        console.print(PRINT_MESSAGES["index_html"])
+    console.input(PRINT_MESSAGES["continue"])
     return None
 
 
@@ -597,7 +546,7 @@ def movie_db_function_quit():
     Returns:
         None
     """
-    console.print(print_messages()["exit"])
+    console.print(PRINT_MESSAGES["exit"])
     sys.exit()
 
 
@@ -625,7 +574,7 @@ def main():
     while True:
         choice = start_screen()
         if choice not in functions_dictionary:
-            console.print(print_messages()["error_not_valid"])
+            console.print(PRINT_MESSAGES["error_not_valid"])
             continue
         functions_dictionary[choice]()
 
